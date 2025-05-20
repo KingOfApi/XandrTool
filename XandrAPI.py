@@ -29,15 +29,16 @@ def make_api_request(method, url, headers=None, params=None, json=None):
         logging.error(f"Invalid JSON response: {e}")
         return None
 
-def get_cities_for_country(token: str, country_name: str) -> list[dict] | None:
+def get_cities_for_country(token: str, country_name: str, city_name: str = None) -> list[dict] | None:
     """
-    Fetches city IDs for a given country.
+    Fetches city IDs for a given country and optionally filters by city name.
     Only active cities are included in the response.
     """
     url = f"{XANDR_BASE_URL}/city"
     headers = {"Authorization": token}
     params = {
-        "active": "true"  # Filter for active cities only
+        "active": "true",  # Filter for active cities only
+        "name": city_name or ""  # Optionally filter by city name
     }
 
     json_response = make_api_request("GET", url, headers=headers, params=params)
@@ -51,13 +52,13 @@ def get_cities_for_country(token: str, country_name: str) -> list[dict] | None:
 
     cities_data = json_response['response']['cities']
     filtered_data = [
-        {"id": city['id'], "name": city['name']}
+        {"id": city['id']}
         for city in cities_data
         if city['country_name'].strip().lower() == country_name.strip().lower()
     ]
 
     if not filtered_data:
-        st.warning(f"No active cities found for country: {country_name}.")
+        st.warning(f"No active cities found for country: {country_name} and city: {city_name}.")
         return None
 
     return filtered_data
@@ -349,32 +350,11 @@ with tab1:
                 st.error("Country Name is required.")
                 st.stop()
 
-            # Split city names into a list
-            city_names = [city.strip() for city in city_name_input.split(",") if city.strip()]
-            if not city_names:
-                st.error("Please provide at least one city name.")
-                st.stop()
-
             # Fetch city targets
-            city_targets = get_cities_for_country(st.session_state["api_token"], country_name_input)
+            city_targets = get_cities_for_country(st.session_state["api_token"], country_name_input, city_name_input)
             if not city_targets:
                 st.error("No valid city targets found. Please check your inputs.")
                 st.stop()
-
-            # Check which cities were found
-            found_cities = []
-            not_found_cities = []
-            for city in city_names:
-                if any(target['name'].lower() == city.lower() for target in city_targets):
-                    found_cities.append(city)
-                else:
-                    not_found_cities.append(city)
-
-            # Notify the user about found and not-found cities
-            if found_cities:
-                st.success(f"Found cities: {', '.join(found_cities)}")
-            if not_found_cities:
-                st.warning(f"Cities not found: {', '.join(not_found_cities)}")
 
             # Determine line items to update
             line_item_ids = []
