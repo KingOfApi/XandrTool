@@ -279,6 +279,37 @@ def generate_and_poll_report(advertiser_id_input, use_custom_dates, start_date, 
         logging.error(f"Error while downloading the report: {e}")
         return
 
+def create_swedish_postal_code_list(token: str, name: str, description: str, postal_codes: list[dict]) -> dict | None:
+    """
+    Creates a new postal code list for Sweden.
+    Example postal_codes: [{"country_code": "SE", "code": "111 22"}, ...]
+    """
+    url = f"{XANDR_BASE_URL}/postal-code-list"
+    headers = {"Authorization": token}
+    payload = {
+        "postal-code-list": {
+            "name": name,
+            "description": description,
+            "postal_codes": postal_codes
+        }
+    }
+    return make_api_request("POST", url, headers=headers, json=payload)
+
+def append_swedish_postal_codes(token: str, list_id: int, postal_codes: list[dict]) -> dict | None:
+    """
+    Appends Swedish postal codes to an existing postal code list.
+    Example postal_codes: [{"country_code": "SE", "code": "987 65"}, ...]
+    """
+    url = f"{XANDR_BASE_URL}/postal-code-list?id={list_id}&append=true"
+    headers = {"Authorization": token}
+    payload = {
+        "postal-code-list": {
+            "id": list_id,
+            "postal_codes": postal_codes
+        }
+    }
+    return make_api_request("PUT", url, headers=headers, json=payload)
+
 # --- Streamlit UI ---
 st.set_page_config(layout="wide")
 st.title("Xandr Tools: Geo Targeting, Conversion Pixels & Reporting")
@@ -464,3 +495,121 @@ with tab2:
                     st.success(f"Conversion pixel updated for Line Item ID: {line_item_id}")
                 else:
                     st.error(f"Failed to update conversion pixel for Line Item ID: {line_item_id}")
+
+# --- Tab 3: Reporting ---
+with tab3:
+    st.header("Automated Reporting Tool")
+    if st.session_state["api_token"] is None:
+        st.error("Please log in to use this tool.")
+    else:
+        advertiser_id_input = st.text_input(
+            "Advertiser ID",
+            placeholder="Enter Advertiser ID",
+            help="Provide the Advertiser ID for the report.",
+            key="report_advertiser_id"
+        )
+
+        report_type = st.selectbox(
+            "Select Report Type",
+            options=["Site Performance", "Creative Performance", "Line Item Performance"]
+        )
+
+        use_custom_dates = st.checkbox("Use Custom Date Range")
+        if use_custom_dates:
+            start_date = st.date_input("Start Date", value=pd.to_datetime("2023-01-01"), min_value=pd.to_datetime("2020-01-01"), max_value=pd.to_datetime("today"))
+            end_date = st.date_input("End Date", value=pd.to_datetime("today"), min_value=pd.to_datetime("2020-01-01"), max_value=pd.to_datetime("today"))
+        else:
+            report_interval = st.selectbox(
+                "Select Report Interval",
+                options=["today", "yesterday", "last_7_days", "last_30_days"],
+                index=2  # Default to "last_7_days"
+            )
+            start_date = None
+            end_date = None
+
+        if st.button("Generate Report"):
+            if not advertiser_id_input.strip():
+                st.error("Advertiser ID is required.")
+                st.stop()
+
+            if report_type == "Site Performance":
+                report_payload = {
+                    "report": {
+                        "type": "site_performance",
+                        "columns": [
+                            "site_id",
+                            "site_name",
+                            "impressions",
+                            "clicks",
+                            "spend",
+                            "revenue",
+                            "date"
+                        ],
+                        "report_interval": "last_7_days"
+                    }
+                }
+            elif report_type == "Creative Performance":
+                report_payload = {
+                    "report": {
+                        "type": "creative_performance",
+                        "columns": [
+                            "creative_id",
+                            "creative_name",
+                            "impressions",
+                            "clicks",
+                            "spend",
+                            "revenue",
+                            "date"
+                        ],
+                        "report_interval": "last_7_days"
+                    }
+                }
+            elif report_type == "Line Item Performance":
+                report_payload = {
+                    "report": {
+                        "type": "line_item_performance",
+                        "columns": [
+                            "line_item_id",
+                            "line_item_name",
+                            "impressions",
+                            "clicks",
+                            "spend",
+                            "revenue",
+                            "date"
+                        ],
+                        "report_interval": "last_7_days"
+                    }
+                }
+
+            # Generate and Download the Report
+            generate_and_poll_report(advertiser_id_input, use_custom_dates, start_date, end_date, report_interval, report_payload)
+
+# --- Swedish Postal Code List Creation (for testing) ---
+if st.button("Create Swedish Postal Code List"):
+    response = create_swedish_postal_code_list(
+        token=st.session_state["api_token"],
+        name="Swedish Target Areas",
+        description="List of specific postal codes in Sweden for targeting.",
+        postal_codes=[
+            {"country_code": "SE", "code": "111 22"},
+            {"country_code": "SE", "code": "123 45"},
+            {"country_code": "SE", "code": "54321"}
+        ]
+    )
+    if response:
+        st.success(f"Postal code list created successfully! ID: {response.get('id')}")
+    else:
+        st.error("Failed to create postal code list.")
+
+response = append_swedish_postal_codes(
+    token=st.session_state["api_token"],
+    list_id=3902,
+    postal_codes=[
+        {"country_code": "SE", "code": "987 65"},
+        {"country_code": "SE", "code": "555 44"}
+    ]
+)
+if response:
+    st.success(f"Postal codes appended successfully to list ID 3902!")
+else:
+    st.error("Failed to append postal codes to the list.")
