@@ -651,3 +651,7 @@ with tab4:
                     st.success(f"Postal codes appended successfully to list ID {list_id}!")
                 else:
                     st.error("Failed to append postal codes to the list.")
+
+# --- Error Handling ---
+except Exception as e:
+    st.error(f"UNEXPECTED ERROR: {e}")
