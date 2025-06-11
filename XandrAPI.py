@@ -351,17 +351,19 @@ else:
             st.sidebar.error("Please enter both username and password.")
 
 # Tabs for different tools
-if st.session_state["api_token"]:  # Only show tabs if the user is logged in
-    tab1, tab2, tab3 = st.tabs([
+if st.session_state["api_token"]:
+    tab1, tab2, tab3, tab4 = st.tabs([
         "Geo Targeting Updater",
         "Conversion Pixel Updater",
-        "Reporting"  # or "Postal Code List" if you want
+        "Reporting",
+        "Postal Code List"
     ])
 else:
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         "Geo Targeting Updater",
         "Conversion Pixel Updater",
-        "Reporting"
+        "Reporting",
+        "Postal Code List"
     ])
 
 # --- Tab 1: Geo Targeting Updater ---
@@ -592,32 +594,44 @@ with tab3:
             # Generate and Download the Report
             generate_and_poll_report(advertiser_id_input, use_custom_dates, start_date, end_date, report_interval, report_payload)
 
-# --- Swedish Postal Code List Creation (for testing) ---
-if st.button("Create Swedish Postal Code List"):
-    response = create_swedish_postal_code_list(
-        token=st.session_state["api_token"],
-        name="Swedish Target Areas",
-        description="List of specific postal codes in Sweden for targeting.",
-        postal_codes=[
-            {"country_code": "SE", "code": "111 22"},
-            {"country_code": "SE", "code": "123 45"},
-            {"country_code": "SE", "code": "54321"}
-        ]
-    )
-    if response:
-        st.success(f"Postal code list created successfully! ID: {response.get('id')}")
+# --- Tab 4: Postal Code List ---
+with tab4:
+    st.header("Swedish Postal Code List Management")
+    if st.session_state["api_token"] is None:
+        st.error("Please log in to use this tool.")
     else:
-        st.error("Failed to create postal code list.")
+        st.subheader("Create New Swedish Postal Code List")
+        if st.button("Create Swedish Postal Code List"):
+            response = create_swedish_postal_code_list(
+                token=st.session_state["api_token"],
+                name="Swedish Target Areas",
+                description="List of specific postal codes in Sweden for targeting.",
+                postal_codes=[
+                    {"country_code": "SE", "code": "111 22"},
+                    {"country_code": "SE", "code": "123 45"},
+                    {"country_code": "SE", "code": "54321"}
+                ]
+            )
+            if response and "response" in response and "postal-code-list" in response["response"]:
+                st.success(f"Postal code list created successfully! ID: {response['response']['postal-code-list']['id']}")
+            else:
+                st.error("Failed to create postal code list.")
 
-response = append_swedish_postal_codes(
-    token=st.session_state["api_token"],
-    list_id=3902,
-    postal_codes=[
-        {"country_code": "SE", "code": "987 65"},
-        {"country_code": "SE", "code": "555 44"}
-    ]
-)
-if response:
-    st.success(f"Postal codes appended successfully to list ID 3902!")
-else:
-    st.error("Failed to append postal codes to the list.")
+        st.subheader("Append Postal Codes to Existing List")
+        list_id = st.text_input("Postal Code List ID", key="postal_list_id")
+        if st.button("Append Postal Codes"):
+            if not list_id.strip().isdigit():
+                st.error("Please enter a valid numeric list ID.")
+            else:
+                response = append_swedish_postal_codes(
+                    token=st.session_state["api_token"],
+                    list_id=int(list_id.strip()),
+                    postal_codes=[
+                        {"country_code": "SE", "code": "987 65"},
+                        {"country_code": "SE", "code": "555 44"}
+                    ]
+                )
+                if response and response.get("response", {}).get("status") == "OK":
+                    st.success(f"Postal codes appended successfully to list ID {list_id}!")
+                else:
+                    st.error("Failed to append postal codes to the list.")
