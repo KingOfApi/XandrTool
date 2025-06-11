@@ -596,11 +596,13 @@ with tab3:
 
 # --- Tab 4: Postal Code List ---
 with tab4:
+    st.write("DEBUG: Entered Postal Code List tab")
     st.write(f"DEBUG: api_token={st.session_state.get('api_token')}")
     st.header("Swedish Postal Code List Management")
     if st.session_state["api_token"] is None:
         st.error("Please log in to use this tool.")
     else:
+        st.write("DEBUG: Inside else block, should see UI below")
         st.subheader("Create New Swedish Postal Code List")
         name = st.text_input("List Name", value="Swedish Target Areas", key="postal_list_name")
         description = st.text_input("Description", value="List of specific postal codes in Sweden for targeting.", key="postal_list_desc")
