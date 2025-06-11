@@ -311,347 +311,348 @@ def append_swedish_postal_codes(token: str, list_id: int, postal_codes: list[dic
     return make_api_request("PUT", url, headers=headers, json=payload)
 
 # --- Streamlit UI ---
-st.set_page_config(layout="wide")
-st.title("Xandr Tools: Geo Targeting, Conversion Pixels & Reporting")
+try:
+    # --- Streamlit UI code starts here ---
+    st.set_page_config(layout="wide")
+    st.title("Xandr Tools: Geo Targeting, Conversion Pixels & Reporting")
 
-# Initialize session state variables
-if "api_token" not in st.session_state:
-    st.session_state["api_token"] = None
-if "username" not in st.session_state:
-    st.session_state["username"] = None
-
-# --- Login Section ---
-st.sidebar.header("Login")
-
-# Check if the user is already logged in
-if st.session_state["api_token"]:
-    st.sidebar.success(f"Logged in as {st.session_state['username']}")
-    logout_button = st.sidebar.button("Log Out")
-    if logout_button:
+    # Initialize session state variables
+    if "api_token" not in st.session_state:
         st.session_state["api_token"] = None
+    if "username" not in st.session_state:
         st.session_state["username"] = None
-        st.sidebar.info("You have been logged out.")
-else:
-    # Show the login form if the user is not logged in
-    username = st.sidebar.text_input("Username", placeholder="Enter your username")
-    password = st.sidebar.text_input("Password", placeholder="Enter your password", type="password")
-    login_button = st.sidebar.button("Log In")
 
-    if login_button:
-        if username and password:
-            # Authenticate and retrieve the token
-            token = authenticate(username, password)
-            if token:
-                st.session_state["api_token"] = token
-                st.session_state["username"] = username
-                st.sidebar.success("Logged in successfully!")
-            else:
-                st.sidebar.error("Login failed. Please check your credentials.")
-        else:
-            st.sidebar.error("Please enter both username and password.")
+    # --- Login Section ---
+    st.sidebar.header("Login")
 
-# Tabs for different tools
-if st.session_state["api_token"]:
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "Geo Targeting Updater",
-        "Conversion Pixel Updater",
-        "Reporting",
-        "Postal Code List"
-    ])
-else:
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "Geo Targeting Updater",
-        "Conversion Pixel Updater",
-        "Reporting",
-        "Postal Code List"
-    ])
-
-# --- Tab 1: Geo Targeting Updater ---
-with tab1:
-    st.header("Geo Targeting Updater")
-    if st.session_state["api_token"] is None:
-        st.error("Please log in to use this tool.")
+    # Check if the user is already logged in
+    if st.session_state["api_token"]:
+        st.sidebar.success(f"Logged in as {st.session_state['username']}")
+        logout_button = st.sidebar.button("Log Out")
+        if logout_button:
+            st.session_state["api_token"] = None
+            st.session_state["username"] = None
+            st.sidebar.info("You have been logged out.")
     else:
-        country_name_input = st.text_input("Country Name", placeholder="e.g., Sweden, Germany, United States", key="geo_country_name")
-        city_name_input = st.text_input("City Name (Optional)", placeholder="e.g., Stockholm", key="geo_city_name")
-        insertion_order_id_input = st.text_input(
-            "Insertion Order ID (Optional)", 
-            placeholder="Enter a valid Insertion Order ID",
-            help="Provide the Insertion Order ID to update all line items within it.",
-            key="geo_insertion_order_id"
-        )
-        line_item_ids_input = st.text_area(
-            "Line Item IDs (Optional)", 
-            placeholder="Enter line item IDs separated by commas (e.g., 12345, 67890, 11223)",
-            help="Provide the line item IDs you want to update. Leave blank to update all line items in the insertion order.",
-            key="geo_line_item_ids"
-        )
-        if st.button("Update Geo Targeting", key="geo_update_button"):
-            if not country_name_input.strip():
-                st.error("Country Name is required.")
-                st.stop()
+        # Show the login form if the user is not logged in
+        username = st.sidebar.text_input("Username", placeholder="Enter your username")
+        password = st.sidebar.text_input("Password", placeholder="Enter your password", type="password")
+        login_button = st.sidebar.button("Log In")
 
-            # Fetch city targets
-            city_targets = get_cities_for_country(st.session_state["api_token"], country_name_input, city_name_input)
-            if not city_targets:
-                st.error("No valid city targets found. Please check your inputs.")
-                st.stop()
-
-            # Determine line items to update
-            line_item_ids = []
-            if line_item_ids_input.strip():
-                # Parse line item IDs from user input
-                line_item_ids = [int(item.strip()) for item in line_item_ids_input.split(",") if item.strip().isdigit()]
-            elif insertion_order_id_input.strip():
-                # Fetch line item IDs from the insertion order
-                line_item_ids = get_line_item_ids_from_io(st.session_state["api_token"], int(insertion_order_id_input.strip()))
-                if not line_item_ids:
-                    st.error("No line items found for the provided Insertion Order ID.")
-                    st.stop()
-            else:
-                st.error("Either Line Item IDs or an Insertion Order ID is required.")
-                st.stop()
-
-            # Update geo targeting for each line item
-            for line_item_id in line_item_ids:
-                profile_id = get_profile_id_for_line_item(st.session_state["api_token"], line_item_id)
-                if not profile_id:
-                    st.error(f"Profile ID not found for Line Item ID: {line_item_id}")
-                    continue
-
-                success = update_line_item_profile_geo(st.session_state["api_token"], profile_id, city_targets)
-                if success:
-                    st.success(f"Geo targeting updated for Line Item ID: {line_item_id}")
+        if login_button:
+            if username and password:
+                # Authenticate and retrieve the token
+                token = authenticate(username, password)
+                if token:
+                    st.session_state["api_token"] = token
+                    st.session_state["username"] = username
+                    st.sidebar.success("Logged in successfully!")
                 else:
-                    st.error(f"Failed to update geo targeting for Line Item ID: {line_item_id}")
-
-# --- Tab 2: Conversion Pixel Updater ---
-with tab2:
-    st.header("Conversion Pixel Updater")
-    if st.session_state["api_token"] is None:
-        st.error("Please log in to use this tool.")
-    else:
-        insertion_order_id_input = st.text_input(
-            "Insertion Order ID (Optional)", 
-            placeholder="Enter a valid Insertion Order ID",
-            help="Provide the Insertion Order ID to update all line items with the new conversion pixel.",
-            key="pixel_insertion_order_id"
-        )
-        line_item_ids_input = st.text_area(
-            "Line Item IDs (Optional)", 
-            placeholder="Enter line item IDs separated by commas (e.g., 12345, 67890, 11223)",
-            help="Provide the line item IDs you want to update. Leave blank to update all line items in the insertion order.",
-            key="pixel_line_item_ids"
-        )
-        new_pixel_id_input = st.text_input(
-            "New Conversion Pixel ID", 
-            placeholder="Enter the new conversion pixel ID",
-            help="Provide the ID of the new conversion pixel to apply.",
-            key="pixel_new_pixel_id"
-        )
-        advertiser_id_input = st.text_input(
-            "Advertiser ID (Required)",
-            placeholder="Enter Advertiser ID",
-            help="Provide the Advertiser ID associated with the line items.",
-            key="pixel_advertiser_id"
-        )
-
-        if not advertiser_id_input.strip():
-            st.error("Advertiser ID is required.")
-            st.stop()
-
-        if not advertiser_id_input.strip().isdigit():
-            st.error("Advertiser ID must be a numeric value.")
-            st.stop()
-
-        if st.button("Update Conversion Pixels", key="pixel_update_button"):
-            # Validate Inputs
-            if not new_pixel_id_input.strip():
-                st.error("New Conversion Pixel ID is required.")
-                st.stop()
-
-            if not new_pixel_id_input.strip().isdigit():
-                st.error("Conversion Pixel ID must be a numeric value.")
-                st.stop()
-
-            line_item_ids = []
-            if line_item_ids_input.strip():
-                # Parse line item IDs from user input
-                line_item_ids = [int(item.strip()) for item in line_item_ids_input.split(",") if item.strip().isdigit()]
-            elif insertion_order_id_input.strip():
-                # Validate that the insertion order ID is numeric
-                if not insertion_order_id_input.strip().isdigit():
-                    st.error("Insertion Order ID must be a numeric value.")
-                    st.stop()
-
-                # Fetch line item IDs from the insertion order
-                line_item_ids = get_line_item_ids_from_io(st.session_state["api_token"], int(insertion_order_id_input.strip()))
-                if not line_item_ids:
-                    st.error("No line items found for the provided Insertion Order ID.")
-                    st.stop()
+                    st.sidebar.error("Login failed. Please check your credentials.")
             else:
-                st.error("Either Line Item IDs or an Insertion Order ID is required.")
-                st.stop()
+                st.sidebar.error("Please enter both username and password.")
 
-            # Update Conversion Pixel for Each Line Item
-            for line_item_id in line_item_ids:
-                success = update_conversion_pixel(
-                    token=st.session_state["api_token"],
-                    advertiser_id=int(advertiser_id_input.strip()),  # Pass advertiser_id from user input
-                    line_item_id=line_item_id,
-                    pixel_id=int(new_pixel_id_input.strip()),
-                )
-                if success:
-                    st.success(f"Conversion pixel updated for Line Item ID: {line_item_id}")
-                else:
-                    st.error(f"Failed to update conversion pixel for Line Item ID: {line_item_id}")
-
-# --- Tab 3: Reporting ---
-with tab3:
-    st.header("Automated Reporting Tool")
-    if st.session_state["api_token"] is None:
-        st.error("Please log in to use this tool.")
+    # Tabs for different tools
+    if st.session_state["api_token"]:
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "Geo Targeting Updater",
+            "Conversion Pixel Updater",
+            "Reporting",
+            "Postal Code List"
+        ])
     else:
-        advertiser_id_input = st.text_input(
-            "Advertiser ID",
-            placeholder="Enter Advertiser ID",
-            help="Provide the Advertiser ID for the report.",
-            key="report_advertiser_id"
-        )
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "Geo Targeting Updater",
+            "Conversion Pixel Updater",
+            "Reporting",
+            "Postal Code List"
+        ])
 
-        report_type = st.selectbox(
-            "Select Report Type",
-            options=["Site Performance", "Creative Performance", "Line Item Performance"]
-        )
-
-        use_custom_dates = st.checkbox("Use Custom Date Range")
-        if use_custom_dates:
-            start_date = st.date_input("Start Date", value=pd.to_datetime("2023-01-01"), min_value=pd.to_datetime("2020-01-01"), max_value=pd.to_datetime("today"))
-            end_date = st.date_input("End Date", value=pd.to_datetime("today"), min_value=pd.to_datetime("2020-01-01"), max_value=pd.to_datetime("today"))
+    # --- Tab 1: Geo Targeting Updater ---
+    with tab1:
+        st.header("Geo Targeting Updater")
+        if st.session_state["api_token"] is None:
+            st.error("Please log in to use this tool.")
         else:
-            report_interval = st.selectbox(
-                "Select Report Interval",
-                options=["today", "yesterday", "last_7_days", "last_30_days"],
-                index=2  # Default to "last_7_days"
+            country_name_input = st.text_input("Country Name", placeholder="e.g., Sweden, Germany, United States", key="geo_country_name")
+            city_name_input = st.text_input("City Name (Optional)", placeholder="e.g., Stockholm", key="geo_city_name")
+            insertion_order_id_input = st.text_input(
+                "Insertion Order ID (Optional)", 
+                placeholder="Enter a valid Insertion Order ID",
+                help="Provide the Insertion Order ID to update all line items within it.",
+                key="geo_insertion_order_id"
             )
-            start_date = None
-            end_date = None
+            line_item_ids_input = st.text_area(
+                "Line Item IDs (Optional)", 
+                placeholder="Enter line item IDs separated by commas (e.g., 12345, 67890, 11223)",
+                help="Provide the line item IDs you want to update. Leave blank to update all line items in the insertion order.",
+                key="geo_line_item_ids"
+            )
+            if st.button("Update Geo Targeting", key="geo_update_button"):
+                if not country_name_input.strip():
+                    st.error("Country Name is required.")
+                    st.stop()
 
-        if st.button("Generate Report"):
+                # Fetch city targets
+                city_targets = get_cities_for_country(st.session_state["api_token"], country_name_input, city_name_input)
+                if not city_targets:
+                    st.error("No valid city targets found. Please check your inputs.")
+                    st.stop()
+
+                # Determine line items to update
+                line_item_ids = []
+                if line_item_ids_input.strip():
+                    # Parse line item IDs from user input
+                    line_item_ids = [int(item.strip()) for item in line_item_ids_input.split(",") if item.strip().isdigit()]
+                elif insertion_order_id_input.strip():
+                    # Fetch line item IDs from the insertion order
+                    line_item_ids = get_line_item_ids_from_io(st.session_state["api_token"], int(insertion_order_id_input.strip()))
+                    if not line_item_ids:
+                        st.error("No line items found for the provided Insertion Order ID.")
+                        st.stop()
+                else:
+                    st.error("Either Line Item IDs or an Insertion Order ID is required.")
+                    st.stop()
+
+                # Update geo targeting for each line item
+                for line_item_id in line_item_ids:
+                    profile_id = get_profile_id_for_line_item(st.session_state["api_token"], line_item_id)
+                    if not profile_id:
+                        st.error(f"Profile ID not found for Line Item ID: {line_item_id}")
+                        continue
+
+                    success = update_line_item_profile_geo(st.session_state["api_token"], profile_id, city_targets)
+                    if success:
+                        st.success(f"Geo targeting updated for Line Item ID: {line_item_id}")
+                    else:
+                        st.error(f"Failed to update geo targeting for Line Item ID: {line_item_id}")
+
+    # --- Tab 2: Conversion Pixel Updater ---
+    with tab2:
+        st.header("Conversion Pixel Updater")
+        if st.session_state["api_token"] is None:
+            st.error("Please log in to use this tool.")
+        else:
+            insertion_order_id_input = st.text_input(
+                "Insertion Order ID (Optional)", 
+                placeholder="Enter a valid Insertion Order ID",
+                help="Provide the Insertion Order ID to update all line items with the new conversion pixel.",
+                key="pixel_insertion_order_id"
+            )
+            line_item_ids_input = st.text_area(
+                "Line Item IDs (Optional)", 
+                placeholder="Enter line item IDs separated by commas (e.g., 12345, 67890, 11223)",
+                help="Provide the line item IDs you want to update. Leave blank to update all line items in the insertion order.",
+                key="pixel_line_item_ids"
+            )
+            new_pixel_id_input = st.text_input(
+                "New Conversion Pixel ID", 
+                placeholder="Enter the new conversion pixel ID",
+                help="Provide the ID of the new conversion pixel to apply.",
+                key="pixel_new_pixel_id"
+            )
+            advertiser_id_input = st.text_input(
+                "Advertiser ID (Required)",
+                placeholder="Enter Advertiser ID",
+                help="Provide the Advertiser ID associated with the line items.",
+                key="pixel_advertiser_id"
+            )
+
             if not advertiser_id_input.strip():
                 st.error("Advertiser ID is required.")
                 st.stop()
 
-            if report_type == "Site Performance":
-                report_payload = {
-                    "report": {
-                        "type": "site_performance",
-                        "columns": [
-                            "site_id",
-                            "site_name",
-                            "impressions",
-                            "clicks",
-                            "spend",
-                            "revenue",
-                            "date"
-                        ],
-                        "report_interval": "last_7_days"
-                    }
-                }
-            elif report_type == "Creative Performance":
-                report_payload = {
-                    "report": {
-                        "type": "creative_performance",
-                        "columns": [
-                            "creative_id",
-                            "creative_name",
-                            "impressions",
-                            "clicks",
-                            "spend",
-                            "revenue",
-                            "date"
-                        ],
-                        "report_interval": "last_7_days"
-                    }
-                }
-            elif report_type == "Line Item Performance":
-                report_payload = {
-                    "report": {
-                        "type": "line_item_performance",
-                        "columns": [
-                            "line_item_id",
-                            "line_item_name",
-                            "impressions",
-                            "clicks",
-                            "spend",
-                            "revenue",
-                            "date"
-                        ],
-                        "report_interval": "last_7_days"
-                    }
-                }
+            if not advertiser_id_input.strip().isdigit():
+                st.error("Advertiser ID must be a numeric value.")
+                st.stop()
 
-            # Generate and Download the Report
-            generate_and_poll_report(advertiser_id_input, use_custom_dates, start_date, end_date, report_interval, report_payload)
+            if st.button("Update Conversion Pixels", key="pixel_update_button"):
+                # Validate Inputs
+                if not new_pixel_id_input.strip():
+                    st.error("New Conversion Pixel ID is required.")
+                    st.stop()
 
-# --- Tab 4: Postal Code List ---
-with tab4:
-    st.write("DEBUG: Entered Postal Code List tab")
-    st.write(f"DEBUG: api_token={st.session_state.get('api_token')}")
-    st.header("Swedish Postal Code List Management")
-    if st.session_state["api_token"] is None:
-        st.error("Please log in to use this tool.")
-    else:
-        st.write("DEBUG: Inside else block, should see UI below")
-        st.subheader("Create New Swedish Postal Code List")
-        name = st.text_input("List Name", value="Swedish Target Areas", key="postal_list_name")
-        description = st.text_input("Description", value="List of specific postal codes in Sweden for targeting.", key="postal_list_desc")
-        postal_codes_input = st.text_area(
-            "Postal Codes (one per line, e.g. 111 22 or 54321)",
-            value="111 22\n123 45\n54321",
-            key="postal_codes_input"
-        )
-        if st.button("Create Postal Code List"):
-            postal_codes = [
-                {"country_code": "SE", "code": code.strip()}
-                for code in postal_codes_input.splitlines() if code.strip()
-            ]
-            response = create_swedish_postal_code_list(
-                token=st.session_state["api_token"],
-                name=name,
-                description=description,
-                postal_codes=postal_codes
+                if not new_pixel_id_input.strip().isdigit():
+                    st.error("Conversion Pixel ID must be a numeric value.")
+                    st.stop()
+
+                line_item_ids = []
+                if line_item_ids_input.strip():
+                    # Parse line item IDs from user input
+                    line_item_ids = [int(item.strip()) for item in line_item_ids_input.split(",") if item.strip().isdigit()]
+                elif insertion_order_id_input.strip():
+                    # Validate that the insertion order ID is numeric
+                    if not insertion_order_id_input.strip().isdigit():
+                        st.error("Insertion Order ID must be a numeric value.")
+                        st.stop()
+
+                    # Fetch line item IDs from the insertion order
+                    line_item_ids = get_line_item_ids_from_io(st.session_state["api_token"], int(insertion_order_id_input.strip()))
+                    if not line_item_ids:
+                        st.error("No line items found for the provided Insertion Order ID.")
+                        st.stop()
+                else:
+                    st.error("Either Line Item IDs or an Insertion Order ID is required.")
+                    st.stop()
+
+                # Update Conversion Pixel for Each Line Item
+                for line_item_id in line_item_ids:
+                    success = update_conversion_pixel(
+                        token=st.session_state["api_token"],
+                        advertiser_id=int(advertiser_id_input.strip()),  # Pass advertiser_id from user input
+                        line_item_id=line_item_id,
+                        pixel_id=int(new_pixel_id_input.strip()),
+                    )
+                    if success:
+                        st.success(f"Conversion pixel updated for Line Item ID: {line_item_id}")
+                    else:
+                        st.error(f"Failed to update conversion pixel for Line Item ID: {line_item_id}")
+
+    # --- Tab 3: Reporting ---
+    with tab3:
+        st.header("Automated Reporting Tool")
+        if st.session_state["api_token"] is None:
+            st.error("Please log in to use this tool.")
+        else:
+            advertiser_id_input = st.text_input(
+                "Advertiser ID",
+                placeholder="Enter Advertiser ID",
+                help="Provide the Advertiser ID for the report.",
+                key="report_advertiser_id"
             )
-            if response and "response" in response and "postal-code-list" in response["response"]:
-                st.success(f"Postal code list created successfully! ID: {response['response']['postal-code-list']['id']}")
-            else:
-                st.error("Failed to create postal code list.")
 
-        st.subheader("Append Postal Codes to Existing List")
-        list_id = st.text_input("Postal Code List ID", key="postal_list_id")
-        append_codes_input = st.text_area(
-            "Postal Codes to Append (one per line, e.g. 987 65)",
-            value="987 65\n555 44",
-            key="postal_codes_append"
-        )
-        if st.button("Append Postal Codes"):
-            if not list_id.strip().isdigit():
-                st.error("Please enter a valid numeric list ID.")
+            report_type = st.selectbox(
+                "Select Report Type",
+                options=["Site Performance", "Creative Performance", "Line Item Performance"]
+            )
+
+            use_custom_dates = st.checkbox("Use Custom Date Range")
+            if use_custom_dates:
+                start_date = st.date_input("Start Date", value=pd.to_datetime("2023-01-01"), min_value=pd.to_datetime("2020-01-01"), max_value=pd.to_datetime("today"))
+                end_date = st.date_input("End Date", value=pd.to_datetime("today"), min_value=pd.to_datetime("2020-01-01"), max_value=pd.to_datetime("today"))
             else:
+                report_interval = st.selectbox(
+                    "Select Report Interval",
+                    options=["today", "yesterday", "last_7_days", "last_30_days"],
+                    index=2  # Default to "last_7_days"
+                )
+                start_date = None
+                end_date = None
+
+            if st.button("Generate Report"):
+                if not advertiser_id_input.strip():
+                    st.error("Advertiser ID is required.")
+                    st.stop()
+
+                if report_type == "Site Performance":
+                    report_payload = {
+                        "report": {
+                            "type": "site_performance",
+                            "columns": [
+                                "site_id",
+                                "site_name",
+                                "impressions",
+                                "clicks",
+                                "spend",
+                                "revenue",
+                                "date"
+                            ],
+                            "report_interval": "last_7_days"
+                        }
+                    }
+                elif report_type == "Creative Performance":
+                    report_payload = {
+                        "report": {
+                            "type": "creative_performance",
+                            "columns": [
+                                "creative_id",
+                                "creative_name",
+                                "impressions",
+                                "clicks",
+                                "spend",
+                                "revenue",
+                                "date"
+                            ],
+                            "report_interval": "last_7_days"
+                        }
+                    }
+                elif report_type == "Line Item Performance":
+                    report_payload = {
+                        "report": {
+                            "type": "line_item_performance",
+                            "columns": [
+                                "line_item_id",
+                                "line_item_name",
+                                "impressions",
+                                "clicks",
+                                "spend",
+                                "revenue",
+                                "date"
+                            ],
+                            "report_interval": "last_7_days"
+                        }
+                    }
+
+                # Generate and Download the Report
+                generate_and_poll_report(advertiser_id_input, use_custom_dates, start_date, end_date, report_interval, report_payload)
+
+    # --- Tab 4: Postal Code List ---
+    with tab4:
+        st.write("DEBUG: Entered Postal Code List tab")
+        st.write(f"DEBUG: api_token={st.session_state.get('api_token')}")
+        st.header("Swedish Postal Code List Management")
+        if st.session_state["api_token"] is None:
+            st.error("Please log in to use this tool.")
+        else:
+            st.write("DEBUG: Inside else block, should see UI below")
+            st.subheader("Create New Swedish Postal Code List")
+            name = st.text_input("List Name", value="Swedish Target Areas", key="postal_list_name")
+            description = st.text_input("Description", value="List of specific postal codes in Sweden for targeting.", key="postal_list_desc")
+            postal_codes_input = st.text_area(
+                "Postal Codes (one per line, e.g. 111 22 or 54321)",
+                value="111 22\n123 45\n54321",
+                key="postal_codes_input"
+            )
+            if st.button("Create Postal Code List"):
                 postal_codes = [
                     {"country_code": "SE", "code": code.strip()}
-                    for code in append_codes_input.splitlines() if code.strip()
+                    for code in postal_codes_input.splitlines() if code.strip()
                 ]
-                response = append_swedish_postal_codes(
+                response = create_swedish_postal_code_list(
                     token=st.session_state["api_token"],
-                    list_id=int(list_id.strip()),
+                    name=name,
+                    description=description,
                     postal_codes=postal_codes
                 )
-                if response and response.get("response", {}).get("status") == "OK":
-                    st.success(f"Postal codes appended successfully to list ID {list_id}!")
+                if response and "response" in response and "postal-code-list" in response["response"]:
+                    st.success(f"Postal code list created successfully! ID: {response['response']['postal-code-list']['id']}")
                 else:
-                    st.error("Failed to append postal codes to the list.")
+                    st.error("Failed to create postal code list.")
 
-# --- Error Handling ---
+            st.subheader("Append Postal Codes to Existing List")
+            list_id = st.text_input("Postal Code List ID", key="postal_list_id")
+            append_codes_input = st.text_area(
+                "Postal Codes to Append (one per line, e.g. 987 65)",
+                value="987 65\n555 44",
+                key="postal_codes_append"
+            )
+            if st.button("Append Postal Codes"):
+                if not list_id.strip().isdigit():
+                    st.error("Please enter a valid numeric list ID.")
+                else:
+                    postal_codes = [
+                        {"country_code": "SE", "code": code.strip()}
+                        for code in append_codes_input.splitlines() if code.strip()
+                    ]
+                    response = append_swedish_postal_codes(
+                        token=st.session_state["api_token"],
+                        list_id=int(list_id.strip()),
+                        postal_codes=postal_codes
+                    )
+                    if response and response.get("response", {}).get("status") == "OK":
+                        st.success(f"Postal codes appended successfully to list ID {list_id}!")
+                    else:
+                        st.error("Failed to append postal codes to the list.")
+
 except Exception as e:
     st.error(f"UNEXPECTED ERROR: {e}")
