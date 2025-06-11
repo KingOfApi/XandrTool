@@ -352,9 +352,17 @@ else:
 
 # Tabs for different tools
 if st.session_state["api_token"]:  # Only show tabs if the user is logged in
-    tab1, tab2 = st.tabs(["Geo Targeting Updater", "Conversion Pixel Updater"])  # Exclude the Reporting tab
+    tab1, tab2, tab3 = st.tabs([
+        "Geo Targeting Updater",
+        "Conversion Pixel Updater",
+        "Reporting"  # or "Postal Code List" if you want
+    ])
 else:
-    tab1, tab2 = st.tabs(["Geo Targeting Updater", "Conversion Pixel Updater"])  # Exclude the Reporting tab
+    tab1, tab2, tab3 = st.tabs([
+        "Geo Targeting Updater",
+        "Conversion Pixel Updater",
+        "Reporting"
+    ])
 
 # --- Tab 1: Geo Targeting Updater ---
 with tab1:
