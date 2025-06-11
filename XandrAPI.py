@@ -4,6 +4,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential  # Added for re
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
+import pandas as pd
 
 logging.basicConfig(filename="app.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
