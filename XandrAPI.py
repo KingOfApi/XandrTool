@@ -601,16 +601,23 @@ with tab4:
         st.error("Please log in to use this tool.")
     else:
         st.subheader("Create New Swedish Postal Code List")
-        if st.button("Create Swedish Postal Code List"):
+        name = st.text_input("List Name", value="Swedish Target Areas", key="postal_list_name")
+        description = st.text_input("Description", value="List of specific postal codes in Sweden for targeting.", key="postal_list_desc")
+        postal_codes_input = st.text_area(
+            "Postal Codes (one per line, e.g. 111 22 or 54321)",
+            value="111 22\n123 45\n54321",
+            key="postal_codes_input"
+        )
+        if st.button("Create Postal Code List"):
+            postal_codes = [
+                {"country_code": "SE", "code": code.strip()}
+                for code in postal_codes_input.splitlines() if code.strip()
+            ]
             response = create_swedish_postal_code_list(
                 token=st.session_state["api_token"],
-                name="Swedish Target Areas",
-                description="List of specific postal codes in Sweden for targeting.",
-                postal_codes=[
-                    {"country_code": "SE", "code": "111 22"},
-                    {"country_code": "SE", "code": "123 45"},
-                    {"country_code": "SE", "code": "54321"}
-                ]
+                name=name,
+                description=description,
+                postal_codes=postal_codes
             )
             if response and "response" in response and "postal-code-list" in response["response"]:
                 st.success(f"Postal code list created successfully! ID: {response['response']['postal-code-list']['id']}")
@@ -619,17 +626,23 @@ with tab4:
 
         st.subheader("Append Postal Codes to Existing List")
         list_id = st.text_input("Postal Code List ID", key="postal_list_id")
+        append_codes_input = st.text_area(
+            "Postal Codes to Append (one per line, e.g. 987 65)",
+            value="987 65\n555 44",
+            key="postal_codes_append"
+        )
         if st.button("Append Postal Codes"):
             if not list_id.strip().isdigit():
                 st.error("Please enter a valid numeric list ID.")
             else:
+                postal_codes = [
+                    {"country_code": "SE", "code": code.strip()}
+                    for code in append_codes_input.splitlines() if code.strip()
+                ]
                 response = append_swedish_postal_codes(
                     token=st.session_state["api_token"],
                     list_id=int(list_id.strip()),
-                    postal_codes=[
-                        {"country_code": "SE", "code": "987 65"},
-                        {"country_code": "SE", "code": "555 44"}
-                    ]
+                    postal_codes=postal_codes
                 )
                 if response and response.get("response", {}).get("status") == "OK":
                     st.success(f"Postal codes appended successfully to list ID {list_id}!")
