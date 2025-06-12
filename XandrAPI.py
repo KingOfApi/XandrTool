@@ -463,10 +463,19 @@ try:
                         continue
 
                     if country_only:
+                        country_code = COUNTRY_NAME_TO_CODE.get(country_name_input.strip().lower())
+                        if not country_code:
+                            st.error("Country not supported or not recognized. Please use a supported country name.")
+                            continue
+                        country_targets = [{"country": country_code}]
                         success = update_line_item_profile_geo_country_only(
                             st.session_state["api_token"], profile_id, country_targets
                         )
                     else:
+                        city_targets = get_cities_for_country(st.session_state["api_token"], country_name_input, city_name_input)
+                        if not city_targets:
+                            st.error("No valid city targets found. Please check your inputs.")
+                            continue
                         success = update_line_item_profile_geo(
                             st.session_state["api_token"], profile_id, city_targets
                         )
