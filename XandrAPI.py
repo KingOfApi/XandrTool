@@ -453,7 +453,7 @@ try:
                         )
                     else:
                         success = update_line_item_profile_geo(
-                            st.session_state["api_token"], profile_id, city_targets, country_targets
+                            st.session_state["api_token"], profile_id, city_targets
                         )
                     if success:
                         st.success(f"Geo targeting updated for Line Item ID: {line_item_id}")
