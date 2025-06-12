@@ -445,20 +445,7 @@ try:
                 help="Provide the ID of the new conversion pixel to apply.",
                 key="pixel_new_pixel_id"
             )
-            advertiser_id_input = st.text_input(
-                "Advertiser ID (Required)",
-                placeholder="Enter Advertiser ID",
-                help="Provide the Advertiser ID associated with the line items.",
-                key="pixel_advertiser_id"
-            )
-
-            if not advertiser_id_input.strip():
-                st.error("Advertiser ID is required.")
-                st.stop()
-
-            if not advertiser_id_input.strip().isdigit():
-                st.error("Advertiser ID must be a numeric value.")
-                st.stop()
+            # --- REMOVE Advertiser ID input and checks ---
 
             if st.button("Update Conversion Pixels", key="pixel_update_button"):
                 # Validate Inputs
@@ -493,7 +480,7 @@ try:
                 for line_item_id in line_item_ids:
                     success = update_conversion_pixel(
                         token=st.session_state["api_token"],
-                        advertiser_id=int(advertiser_id_input.strip()),  # Pass advertiser_id from user input
+                        advertiser_id=None,  # Or remove this argument if not needed in your function
                         line_item_id=line_item_id,
                         pixel_id=int(new_pixel_id_input.strip()),
                     )
