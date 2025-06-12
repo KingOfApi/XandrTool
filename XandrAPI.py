@@ -654,5 +654,12 @@ try:
                     else:
                         st.error("Failed to append postal codes to the list.")
 
+    # --- Tab 5: Test Tab ---
+    tab5 = st.empty()  # Create an empty placeholder for the tab
+    with tab5:
+        st.write("DEBUG: Entered Test Tab")
+        test_input = st.text_input("This is a test input box. Type anything here:", key="test_tab_input")
+        st.write(f"You typed: {test_input}")
+
 except Exception as e:
     st.error(f"UNEXPECTED ERROR: {e}")
