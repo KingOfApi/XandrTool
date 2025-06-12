@@ -19,6 +19,9 @@ COUNTRY_NAME_TO_CODE = {
     "sweden": "SE",
     "germany": "DE",
     "united states": "US",
+    "usa": "US",
+    "norway": "NO",
+    "denmark": "DK",
     # Add more as needed
 }
 
@@ -425,10 +428,12 @@ try:
 
                 # Prepare geo targets (but do NOT call the update function yet)
                 country_code = COUNTRY_NAME_TO_CODE.get(country_name_input.strip().lower())
-                if country_only and not country_code:
-                    st.error("Country not supported or not recognized. Please use a supported country name.")
+                if not country_code:
+                    st.error("Country not supported or not recognized. Please use a supported country name (e.g., Sweden, Germany, United States).")
                     st.stop()
                 country_targets = [{"country": country_code}]
+
+                st.write("DEBUG: country_targets payload", country_targets)  # <-- Debugging line
 
                 # Determine line items to update (existing code)
                 line_item_ids = []
