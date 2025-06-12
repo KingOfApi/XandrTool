@@ -353,21 +353,14 @@ try:
             else:
                 st.sidebar.error("Please enter both username and password.")
 
-    # Tabs for different tools
-    if st.session_state["api_token"]:
-        tab1, tab2, tab3, tab4 = st.tabs([
-            "Geo Targeting Updater",
-            "Conversion Pixel Updater",
-            "Reporting",
-            "Postal Code List"
-        ])
-    else:
-        tab1, tab2, tab3, tab4 = st.tabs([
-            "Geo Targeting Updater",
-            "Conversion Pixel Updater",
-            "Reporting",
-            "Postal Code List"
-        ])
+    # Define all tabs at once
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "Geo Targeting Updater",
+        "Conversion Pixel Updater",
+        "Reporting",
+        "Postal Code List",
+        "Test Tab"
+    ])
 
     # --- Tab 1: Geo Targeting Updater ---
     with tab1:
@@ -655,7 +648,6 @@ try:
                         st.error("Failed to append postal codes to the list.")
 
     # --- Tab 5: Test Tab ---
-    tab5 = st.empty()  # Create an empty placeholder for the tab
     with tab5:
         st.write("DEBUG: Entered Test Tab")
         test_input = st.text_input("This is a test input box. Type anything here:", key="test_tab_input")
