@@ -15,13 +15,13 @@ if st.__version__ < "1.0.0":
 XANDR_BASE_URL = "https://api.appnexus.com"
 
 # --- Country Name to Code Mapping ---
-COUNTRY_NAME_TO_CODE = {
-    "sweden": "SE",
-    "germany": "DE",
-    "united states": "US",
-    "usa": "US",
-    "norway": "NO",
-    "denmark": "DK",
+COUNTRY_NAME_TO_ID = {
+    "sweden": 211,
+    "germany": 82,
+    "united states": 233,
+    "usa": 233,
+    "norway": 165,
+    "denmark": 58,
     # Add more as needed
 }
 
@@ -427,11 +427,11 @@ try:
                     st.stop()
 
                 # Prepare geo targets (but do NOT call the update function yet)
-                country_code = COUNTRY_NAME_TO_CODE.get(country_name_input.strip().lower())
-                if not country_code:
+                country_id = COUNTRY_NAME_TO_ID.get(country_name_input.strip().lower())
+                if not country_id:
                     st.error("Country not supported or not recognized. Please use a supported country name (e.g., Sweden, Germany, United States).")
                     st.stop()
-                country_targets = [{"country": country_code}]
+                country_targets = [{"id": country_id}]
 
                 st.write("DEBUG: country_targets payload", country_targets)  # <-- Debugging line
 
@@ -456,7 +456,7 @@ try:
                         continue
 
                     if country_only:
-                        country_targets = [{"country": country_code}]
+                        country_targets = [{"country": country_id}]
                         success = update_line_item_profile_geo_country_only(
                             st.session_state["api_token"], profile_id, country_targets
                         )
