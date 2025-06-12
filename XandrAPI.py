@@ -86,6 +86,31 @@ def update_line_item_profile_geo(token: str, profile_id: int, city_targets: list
         logging.error(f"Error updating geo targeting for profile ID {profile_id}: {e}")
         return False
 
+def update_line_item_profile_geo_country_only(token: str, profile_id: int, country_targets: list[dict]) -> bool:
+    url = f"{XANDR_BASE_URL}/profile?id={profile_id}"
+    headers = {"Authorization": token}
+    data = {
+        "profile": {
+            "id": profile_id,
+            "country_targets": country_targets,
+            "country_action": "include",
+            "region_targets": [],
+            "region_action": "exclude",
+            "dma_targets": [],
+            "dma_action": "exclude",
+            "city_targets": [],
+            "city_action": "exclude"
+        }
+    }
+    try:
+        response = requests.put(url, headers=headers, json=data)
+        response.raise_for_status()
+        return True
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error updating geo targeting for profile ID {profile_id}: {e}")
+        logging.error(f"Error updating geo targeting for profile ID {profile_id}: {e}")
+        return False
+
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 def update_conversion_pixel(token: str, advertiser_id: int, line_item_id: int, pixel_id: int) -> bool:
     """
@@ -382,24 +407,31 @@ try:
                 help="Provide the line item IDs you want to update. Leave blank to update all line items in the insertion order.",
                 key="geo_line_item_ids"
             )
+            country_only = st.checkbox("Remove all city, region, and DMA targeting and target only the country?", value=False)
+
             if st.button("Update Geo Targeting", key="geo_update_button"):
                 if not country_name_input.strip():
                     st.error("Country Name is required.")
                     st.stop()
 
-                # Fetch city targets
-                city_targets = get_cities_for_country(st.session_state["api_token"], country_name_input, city_name_input)
-                if not city_targets:
-                    st.error("No valid city targets found. Please check your inputs.")
-                    st.stop()
+                # Prepare geo targets
+                if country_only:
+                    # Find country code/id if needed by API, or use country_name_input directly if API accepts it
+                    country_targets = [{"country": country_name_input.strip()}]
+                    update_type = "country_only"
+                else:
+                    city_targets = get_cities_for_country(st.session_state["api_token"], country_name_input, city_name_input)
+                    if not city_targets:
+                        st.error("No valid city targets found. Please check your inputs.")
+                        st.stop()
+                    country_targets = [{"country": country_name_input.strip()}]
+                    update_type = "country_and_city"
 
-                # Determine line items to update
+                # Determine line items to update (existing code)
                 line_item_ids = []
                 if line_item_ids_input.strip():
-                    # Parse line item IDs from user input
                     line_item_ids = [int(item.strip()) for item in line_item_ids_input.split(",") if item.strip().isdigit()]
                 elif insertion_order_id_input.strip():
-                    # Fetch line item IDs from the insertion order
                     line_item_ids = get_line_item_ids_from_io(st.session_state["api_token"], int(insertion_order_id_input.strip()))
                     if not line_item_ids:
                         st.error("No line items found for the provided Insertion Order ID.")
@@ -415,7 +447,14 @@ try:
                         st.error(f"Profile ID not found for Line Item ID: {line_item_id}")
                         continue
 
-                    success = update_line_item_profile_geo(st.session_state["api_token"], profile_id, city_targets)
+                    if country_only:
+                        success = update_line_item_profile_geo_country_only(
+                            st.session_state["api_token"], profile_id, country_targets
+                        )
+                    else:
+                        success = update_line_item_profile_geo(
+                            st.session_state["api_token"], profile_id, city_targets, country_targets
+                        )
                     if success:
                         st.success(f"Geo targeting updated for Line Item ID: {line_item_id}")
                     else:
