@@ -94,11 +94,11 @@ def update_line_item_profile_geo_country_only(token: str, profile_id: int, count
             "id": profile_id,
             "country_targets": country_targets,
             "country_action": "include",
-            "region_targets": [],
+            "region_targets": None,
             "region_action": "exclude",
-            "dma_targets": [],
+            "dma_targets": None,
             "dma_action": "exclude",
-            "city_targets": [],
+            "city_targets": None,
             "city_action": "exclude"
         }
     }
