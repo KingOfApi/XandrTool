@@ -348,6 +348,28 @@ def append_swedish_postal_codes(token: str, list_id: int, postal_codes: list[dic
     }
     return make_api_request("PUT", url, headers=headers, json=payload)
 
+def get_xandr_country_id(token: str, country_name: str) -> int | None:
+    """
+    Fetches the Xandr country ID for a given country name using the Country API.
+    """
+    url = f"{XANDR_BASE_URL}/country?search={country_name.strip()}"
+    headers = {"Authorization": token}
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        countries = data.get("response", {}).get("countries", [])
+        if countries:
+            return countries[0].get("id")
+        else:
+            st.error(f"Country '{country_name}' not found via API.")
+            logging.error(f"Country '{country_name}' not found via API. Response: {data}")
+            return None
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching country data for '{country_name}': {e}")
+        logging.error(f"Error fetching country data for '{country_name}': {e}")
+        return None
+
 # --- Streamlit UI ---
 try:
     # --- Streamlit UI code starts here ---
@@ -426,14 +448,13 @@ try:
                     st.error("Country Name is required.")
                     st.stop()
 
-                # Prepare geo targets (but do NOT call the update function yet)
-                country_id = COUNTRY_NAME_TO_ID.get(country_name_input.strip().lower())
+                # Dynamically look up the country ID
+                country_id = get_xandr_country_id(st.session_state["api_token"], country_name_input.strip())
                 if not country_id:
                     st.error("Country not supported or not recognized. Please use a supported country name (e.g., Sweden, Germany, United States).")
                     st.stop()
                 country_targets = [{"id": country_id}]
-
-                st.write("DEBUG: country_targets payload", country_targets)  # <-- Debugging line
+                st.write("DEBUG: country_targets payload", country_targets)  # Debugging line
 
                 # Determine line items to update (existing code)
                 line_item_ids = []
@@ -456,7 +477,6 @@ try:
                         continue
 
                     if country_only:
-                        country_targets = [{"country": country_id}]
                         success = update_line_item_profile_geo_country_only(
                             st.session_state["api_token"], profile_id, country_targets
                         )
