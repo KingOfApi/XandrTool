@@ -656,11 +656,11 @@ try:
             st.error("Please log in to use this tool.")
         else:
             st.subheader("Create New Swedish Postal Code List")
-            name = st.text_input("List Name", value="Swedish Target Areas", key="postal_list_name")
-            description = st.text_input("Description", value="List of specific postal codes in Sweden for targeting.", key="postal_list_desc")
+            name = st.text_input("List Name", placeholder="Swedish Target Areas", key="postal_list_name")
+            description = st.text_input("Description", placeholder="List of specific postal codes in Sweden for targeting.", key="postal_list_desc")
             postal_codes_input = st.text_area(
                 "Postal Codes (one per line, e.g. 111 22 or 54321)",
-                value="111 22\n123 45\n54321",
+                placeholder="111 22\n123 45\n54321",
                 key="postal_codes_input"
             )
             if st.button("Create Postal Code List"):
@@ -680,10 +680,10 @@ try:
                     st.error("Failed to create postal code list.")
 
             st.subheader("Append Postal Codes to Existing List")
-            list_id = st.text_input("Postal Code List ID", key="postal_list_id")
+            list_id = st.text_input("Postal Code List ID", placeholder="Enter list ID", key="postal_list_id")
             append_codes_input = st.text_area(
                 "Postal Codes to Append (one per line, e.g. 987 65)",
-                value="987 65\n555 44",
+                placeholder="987 65\n555 44",
                 key="postal_codes_append"
             )
             if st.button("Append Postal Codes"):
