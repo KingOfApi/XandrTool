@@ -99,11 +99,7 @@ def update_line_item_profile_geo_country_only(token: str, profile_id: int, count
             "dma_targets": None,
             "dma_action": "exclude",
             "city_targets": None,
-            "city_action": "exclude",
-            "zip_targets": None,
-            "zip_action": "exclude",
-            "metro_targets": None,
-            "metro_action": "exclude"
+            "city_action": "exclude"
         }
     }
     try:
