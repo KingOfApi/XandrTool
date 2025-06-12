@@ -99,12 +99,17 @@ def update_line_item_profile_geo_country_only(token: str, profile_id: int, count
             "dma_targets": None,
             "dma_action": "exclude",
             "city_targets": None,
-            "city_action": "exclude"
+            "city_action": "exclude",
+            "zip_targets": None,
+            "zip_action": "exclude",
+            "metro_targets": None,
+            "metro_action": "exclude"
         }
     }
     try:
         response = requests.put(url, headers=headers, json=data)
         response.raise_for_status()
+        st.write("API response:", response.json())  # Optional: debug output
         return True
     except requests.exceptions.RequestException as e:
         st.error(f"Error updating geo targeting for profile ID {profile_id}: {e}")
