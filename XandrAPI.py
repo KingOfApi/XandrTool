@@ -454,7 +454,6 @@ try:
                     st.error("Country not supported or not recognized. Please use a supported country name (e.g., Sweden, Germany, United States).")
                     st.stop()
                 country_targets = [{"id": country_id}]
-                st.write("DEBUG: country_targets payload", country_targets)  # Debugging line
 
                 # Determine line items to update (existing code)
                 line_item_ids = []
