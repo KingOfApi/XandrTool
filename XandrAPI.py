@@ -14,6 +14,14 @@ if st.__version__ < "1.0.0":
 # --- Xandr API Configuration ---
 XANDR_BASE_URL = "https://api.appnexus.com"
 
+# --- Country Name to Code Mapping ---
+COUNTRY_NAME_TO_CODE = {
+    "sweden": "SE",
+    "germany": "DE",
+    "united states": "US",
+    # Add more as needed
+}
+
 # --- Helper Functions (Refactored from your script) ---
 
 def make_api_request(method, url, headers=None, params=None, json=None):
@@ -418,8 +426,14 @@ try:
                 # Prepare geo targets
                 if country_only:
                     # Find country code/id if needed by API, or use country_name_input directly if API accepts it
-                    country_targets = [{"country": country_name_input.strip()}]
-                    update_type = "country_only"
+                    country_code = COUNTRY_NAME_TO_CODE.get(country_name_input.strip().lower())
+                    if not country_code:
+                        st.error("Country not supported or not recognized. Please use a supported country name.")
+                        st.stop()
+                    country_targets = [{"country": country_code}]
+                    success = update_line_item_profile_geo_country_only(
+                        st.session_state["api_token"], profile_id, country_targets
+                    )
                 else:
                     city_targets = get_cities_for_country(st.session_state["api_token"], country_name_input, city_name_input)
                     if not city_targets:
