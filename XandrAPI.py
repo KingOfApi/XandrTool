@@ -496,13 +496,6 @@ try:
         if st.session_state["api_token"] is None:
             st.error("Please log in to use this tool.")
         else:
-            advertiser_id_input = st.text_input(
-                "Advertiser ID",
-                placeholder="Enter Advertiser ID",
-                help="Provide the Advertiser ID for the report.",
-                key="report_advertiser_id"
-            )
-
             report_type = st.selectbox(
                 "Select Report Type",
                 options=["Site Performance", "Creative Performance", "Line Item Performance"]
@@ -512,6 +505,7 @@ try:
             if use_custom_dates:
                 start_date = st.date_input("Start Date", value=pd.to_datetime("2023-01-01"), min_value=pd.to_datetime("2020-01-01"), max_value=pd.to_datetime("today"))
                 end_date = st.date_input("End Date", value=pd.to_datetime("today"), min_value=pd.to_datetime("2020-01-01"), max_value=pd.to_datetime("today"))
+                report_interval = None
             else:
                 report_interval = st.selectbox(
                     "Select Report Interval",
@@ -522,10 +516,7 @@ try:
                 end_date = None
 
             if st.button("Generate Report"):
-                if not advertiser_id_input.strip():
-                    st.error("Advertiser ID is required.")
-                    st.stop()
-
+                # Build the report payload based on report_type
                 if report_type == "Site Performance":
                     report_payload = {
                         "report": {
@@ -576,7 +567,15 @@ try:
                     }
 
                 # Generate and Download the Report
-                generate_and_poll_report(advertiser_id_input, use_custom_dates, start_date, end_date, report_interval, report_payload)
+                # Remove advertiser_id_input from the function call
+                generate_and_poll_report(
+                    advertiser_id_input=None,  # Or remove this argument if your function allows
+                    use_custom_dates=use_custom_dates,
+                    start_date=start_date,
+                    end_date=end_date,
+                    report_interval=report_interval,
+                    report_payload=report_payload
+                )
 
     # --- Tab 4: Postal Code List ---
     with tab4:
